@@ -28,7 +28,7 @@ const authMiddleware = j.middleware(async({ c,next }) => {
   if (!user) {
     throw new HTTPException(401, { message: "Unauthorized" })
   }
-  return next({user})
+  return next({ user })
 })
 /**
  * Public (unauthenticated) procedures
