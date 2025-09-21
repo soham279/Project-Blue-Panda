@@ -2,19 +2,19 @@
 
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Modal } from "@/components/ui/modal"
 import { client } from "@/lib/client"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, formatDistanceToNow } from "date-fns"
-import {
-  ArrowRight,
-  BarChart2,
-  Clock,
-  Database,
-  Link,
-  Trash2,
-} from "lucide-react"
+import { ArrowRight, BarChart2, Clock, Database, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import { DashboardEmptyState } from "./dashboard-empty-state"
 
 export const DashboardPageContent = () => {
+  const [deletingCategory, setDeletingCategory] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
   const { data: categories, isPending: isEventCategoriesLoading } = useQuery({
     queryKey: ["user-event-categories"],
     queryFn: async () => {
@@ -22,6 +22,16 @@ export const DashboardPageContent = () => {
       const { categories } = await res.json()
       return categories
     },
+  })
+
+  const {mutate: deleteCategory, isPending: isDeletingCategory} = useMutation({
+    mutationFn: async (name: string) => {
+      await client.category.deleteCategory.$post({name})
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["user-event-categories"]})
+      setDeletingCategory(null)
+    }
   })
 
   if (isEventCategoriesLoading) {
@@ -33,11 +43,12 @@ export const DashboardPageContent = () => {
   }
 
   if (!categories || categories.length === 0) {
-    return <div>empty state</div>
+    return <DashboardEmptyState />
   }
 
   return (
-    <ul className="grid max-w-6xl grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <>
+      <ul className="grid max-w-6xl grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {categories.map((category) => (
           <li
             className="relative group z-10 transition-all duration-200 hover:-translate-y-0.5"
@@ -96,7 +107,7 @@ export const DashboardPageContent = () => {
                 >
                   View all <ArrowRight className="size-4" />
                 </Link>
-                {/* <Button
+                <Button
                   variant="ghost"
                   size="sm"
                   className="text-gray-500 hover:text-red-600 transition-colors"
@@ -104,11 +115,32 @@ export const DashboardPageContent = () => {
                   onClick={() => setDeletingCategory(category.name)}
                 >
                   <Trash2 size="5" />
-                </Button> */}
+                </Button>
               </div>
             </div>
           </li>
         ))}
       </ul>
+      <Modal showModal={!!deletingCategory} setShowModal={() => setDeletingCategory(null)} className="max-w-md p-8">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg/7 font-medium tracking-tight text-gray-950">
+              Delete Category
+            </h2>
+            <p className="text-sm/6 text-gray-600">
+              Are you sure you want to delete the category &quot;{deletingCategory}&quot;? This action cannot be undone.
+            </p>
+          </div>
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setDeletingCategory(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => deletingCategory && deleteCategory(deletingCategory)} disabled={isDeletingCategory}>
+              {isDeletingCategory ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }
