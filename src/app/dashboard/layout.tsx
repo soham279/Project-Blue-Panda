@@ -47,7 +47,9 @@ const Sidebar = ({ onClose }: { onClose?: () => void }) => {
     <div className="space-y-4 md:space-y-6 relative z-20 flex flex-col h-full">
       {/* logo */}
       <p className="hidden sm:block text-lg/7 font-semibold text-brand-900">
-        Sage<span className="text-brand-700">Sync</span>
+        <Link href="/" className="cursor-pointer">
+          Blue<span className="text-brand-700">Panda</span>
+        </Link>
       </p>
 
       {/* navigation items */}
